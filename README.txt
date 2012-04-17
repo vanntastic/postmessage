@@ -51,13 +51,14 @@ pm(options)
                         function gets passed the object thrown (Exception) by 
                         the postmessage handler.
 
-                origin:String (Optional)
+                origin:String or Array (Optional)
                         The target origin for the postmessage to be 
                         dispatched, either as the literal string "*"
-                        (indicating no preference) or as a URI. The 
-                        postmessage will only be dispatched if the scheme, 
-                        hostname and port match the target origin. 
-                        Default is "*".
+                        (indicating no preference), as a URI or as 
+			an array of URIs [uri1, uri2, ... uriX]. 
+			The postmessage will only be dispatched if 
+			the scheme, hostname and port match the target origin. 
+			Default is "*".
 
                 url:String (Optional)
                         Required if window.postMessage is not available or 
@@ -72,14 +73,14 @@ pm(options)
                         window location hash by setting this to true.
 
 
-pm.bind(type, fn, [origin], [hash])
+pm.bind(type, fn, [origin], [hash], [async_reply])
 -----------------------------------
         Bind postmessage handler on the current window.
 
         type:String (Required)
                 The postmessage type to bind to.
 
-        fn:Function (Required)
+        fn:Function (Required) Parameters - (data, [successCallBack], [errorCallBack])
                 The postmessage handler. A function to execute each time the 
                 postmessage type is received. The function gets passed the 
                 postmessage data.
@@ -104,11 +105,43 @@ pm.bind(type, fn, [origin], [hash])
                 the bind method will take precedence.
 
                     pm.origin = "http://www.xyz.com";
+		    OR
+		    pm.origin = ["http://abc.com", "http://xyz.com"];
 
         hash:Boolean (Optional)
                 You can force location hash polling to check for postmessages 
                 by setting this to true. This is required only if you are 
                 (forcefully) passing postmessages via the location hash.
+	
+	async_reply:Boolean (Optional)
+		When setting this to true, the messages (success or error) 
+		back to the sender in the bind method must be called manually.
+		Instead of using return for success and throw for an error in the fn passed above,
+		the function has two optional methods (successCallback and errorCallback), which 
+		can be called to return data back to the sender when an asynchronous method has completed/failed.
+ 		This is useful when performing asynchronous actions that are not immediately available. 
+
+		For example, when using $.ajax to call a webservice, the successCallBack and errorCallBack
+		can be invoked in the $.ajax success and error functions respectively.
+		
+		pm.bind("async", function(data, successCallBack, errorCallBack) {
+		  $.ajax({
+                      type: "GET",
+                      url: "http://xyz.com/GetData",
+                      data: {},
+		      contentType: "application/json; charset=utf-8",
+                      dataType: "json"
+                      success: function (data, status, xhr) {
+                          successCallBack.call(this, data);
+                      },
+                      error: function (xhr, status, errorThrown) {
+                          errorCallBack.call(this, errorThrown);
+                      }
+                  });
+		}, origin, hash, async_result);
+		
+		
+		
 
 
 pm.unbind([type], [fn])

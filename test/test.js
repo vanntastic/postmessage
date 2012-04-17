@@ -27,7 +27,6 @@ function bind(prefix, hash, origin) {
     return data;
   }, "*", hash);
 
-
   function fn1() {return "fn1";};
   function fn2() {return "fn2";};
   pm.bind(prefix + "test.bind/unbind", fn1, null, hash);
@@ -37,6 +36,25 @@ function bind(prefix, hash, origin) {
   pm.bind(prefix + "test.bind/unbind2", fn1, null, hash);
   pm.bind(prefix + "test.bind/unbind2", fn2, null, hash);
   pm.unbind(prefix + "test.bind/unbind2");
+
+  /* */
+  pm.bind(prefix + "test.async_success", function(data, success, error){
+        success.call(this, data);
+  }, origin, hash, true);
+
+  pm.bind(prefix + "test.async_error", function(data, success, error){
+        error.call(this, "This is an error message");
+  }, origin, hash, true);
+
+  pm.bind(prefix + "test.multiple_origins", function(data){
+        return data;
+  }, [origin, "http://anotherorigin.com"], hash);
+
+  pm.bind(prefix + "test.multiple_origins_error", function(data){
+        return data;
+  }, ["http://not_the_origin.com", "http://not_the_origin_either.com"], hash);
+  /* */
+
 };
 
 function send(w, prefix, hash, target_url) {
@@ -214,4 +232,90 @@ function send(w, prefix, hash, target_url) {
       url: target_url
     });
   });
+
+  test(prefix + "async_success", function() {
+    expect(1);
+    stop();
+    var timer = setTimeout(function() {
+      ok(false);
+      start();
+    }, timeout);
+    pm({
+      target: w,
+      type: prefix + "test.async_success",
+      success: function() {
+        clearTimeout(timer);
+        ok(true);
+        start();
+      },
+      hash: hash,
+      url: target_url
+    });
+  });
+
+  test(prefix + "async_error", function() {
+    expect(2);
+    stop();
+    var timer = setTimeout(function() {
+      ok(false);
+      start();
+    }, timeout);
+    pm({
+      target: w,
+      type: prefix + "test.async_error",
+      data: null,
+      error: function(e) {
+        clearTimeout(timer);
+        ok(true);
+        equals(e, "This is an error message");
+        start();
+      },
+      hash: hash,
+      url: target_url
+    });
+  });
+
+  test(prefix + "multiple_origins", function() {
+    expect(2);
+    stop();
+    var timer = setTimeout(function() {
+      ok(false);
+      start();
+    }, timeout);
+    pm({
+      target: w,
+      type: prefix + "test.multiple_origins",
+      data: {foo: "bar"},
+      success: function(data) {
+        clearTimeout(timer);
+        ok(data);
+        equals(data.foo, "bar");
+        start();
+      },
+      hash: hash,
+      url: target_url
+    });
+  });
+
+  test(prefix + "multiple_origins_error", function() {
+    expect(1);
+    stop();
+    var timer = setTimeout(function() {
+      ok(false);
+      start();
+    }, timeout);
+    pm({
+      target: w,
+      type: prefix + "test.multiple_origins_error",
+      data: {foo:"bar"},
+      error: function(e) {
+        clearTimeout(timer);
+        ok(true);
+        start();
+      },
+      hash: hash,
+      url: target_url
+    });
+  });
+
 };
