@@ -254,9 +254,9 @@ var NO_JQUERY = {};
 
                      try {
                          if ( o.callback ) {
-                           o.fn(msg.data, sendReply, sendError);
+                           o.fn(msg.data, sendReply, sendError,e );
                          } else {
-                           sendReply ( o.fn(msg.data) );
+                           sendReply ( o.fn(msg.data, e) );
                          }
                      }
                      catch (ex) {
