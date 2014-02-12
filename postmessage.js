@@ -61,6 +61,10 @@ var NO_JQUERY = {};
          pm.bind(type, fn, origin, hash, async_reply === true);
      };
 
+     $.pm.on = window.pm.on = function(type, fn, opts) {
+         pm.on(type, fn, opts);
+     };
+
      // unbind postmessage handler
      $.pm.unbind = window.pm.unbind = function(type, fn) {
          pm.unbind(type, fn);
@@ -104,6 +108,21 @@ var NO_JQUERY = {};
 
          bind: function(type, fn, origin, hash, async_reply) {
            pm._replyBind ( type, fn, origin, hash, async_reply );
+         },
+
+         /**
+          * on : syntactic sugar for bind, assumes hash polling is false
+          * and async is true
+          * @param  {string}   type : name of event to bind to
+          * @param  {Function} fn   : callback to execute, expects fn(data, success, error) 
+          * @param  {object}   opts : options to pass to bind [hash:false,origin:'*',async:true]
+          */
+         on: function(type, fn, opts) {
+            opts = opts || {};
+            var hash = opts.hash, 
+                origin = opts.origin || '*',
+                async = opts.async || true;
+            pm._replyBind ( type, fn, origin, hash, async );
          },
        
          _replyBind: function(type, fn, origin, hash, isCallback) {
